@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -211,15 +212,18 @@ func (s *Server) handleAuthorizationCodeRequest(w *Response, r *http.Request) *A
 	// check redirect uri
 	if ret.RedirectUri == "" {
 		ret.RedirectUri = FirstUri(ret.Client.GetRedirectUri(), s.Config.RedirectUriSeparator)
+		fmt.Printf("ret.Redirect is empty. Set to %q\n", ret.RedirectUri)
 	}
+	fmt.Printf("%#v %#v %#v\n", ret.Client.GetRedirectUri(), ret.RedirectUri, s.Config.RedirectUriSeparator)
 	if realRedirectUri, err := ValidateUriList(ret.Client.GetRedirectUri(), ret.RedirectUri, s.Config.RedirectUriSeparator); err != nil {
 		s.setErrorAndLog(w, E_INVALID_REQUEST, err, "auth_code_request=%s", "error validating client redirect")
 		return nil
 	} else {
 		ret.RedirectUri = realRedirectUri
+		fmt.Printf("ret.RedirectUri set to %q\n", realRedirectUri)
 	}
 	if ret.AuthorizeData.RedirectUri != ret.RedirectUri {
-		s.setErrorAndLog(w, E_INVALID_REQUEST, errors.New("Redirect uri is different"), "auth_code_request=%s", "client redirect does not match authorization data")
+		s.setErrorAndLog(w, E_INVALID_REQUEST, errors.New("Redirect uri is different"), "auth_code_request=%s %q %q", "client redirect does not match authorization data", ret.AuthorizeData.RedirectUri, ret.RedirectUri)
 		return nil
 	}
 
